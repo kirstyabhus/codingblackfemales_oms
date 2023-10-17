@@ -27,6 +27,7 @@ public class EndToEndTest {
         sequencer = new Sequencer().start();
         final int fixClientPort = 1001;
         proxy = new Proxy(fixClientPort).start();
+        // abstraction for the client who wants to send an order - > sends a fix message
         fixClient = new TestAgent("fixClient", fixClientPort);
         gateway = new Gateway().start();
         orderManagerAlgo = new OrderManagerAlgo().start();
@@ -43,13 +44,19 @@ public class EndToEndTest {
 
     @Test
     public void should_accept_fix_order() {
-        // when
+        // THIS IS THE FLOW
+        // when (when the client sends an order they send it in a fixclient
+        // sneds a message which is a new order, sends a symbol (VOD vodafone), buy order, quanitity & limit price (client only willing to pay that much)
         fixClient.injectMessage("FIX:MsgType=NewOrderSingle|Symbol=VOD.L|Side=Buy|OrderQty=100|Price=75.96");
         // then
+        // we expect there will be a pending order, with an assigned id (which tells us everthing about the order)
         eventStreamAgent.assertEvent(eventBuilder.orderPending().id(1).ticker("VOD.L").side(Side.Buy).quantity(100).price(7596));
+        // accept the order to be accepted
         eventStreamAgent.assertEvent(eventBuilder.orderAccepted().id(1));
+        // client should have received an execution report -> assert this
         fixClient.assertReceivedMessage("FIX:MsgType=ExecutionReport|OrdStatus=New|OrderID=1");
         // when
+        // then cancel the order
         fixClient.injectMessage("FIX:MsgType=OrderCancelRequest|OrderID=1");
     }
 
