@@ -8,6 +8,8 @@ import com.cbf.stream.oms.*;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+// SEQUENCE IS MAIN POINT THAT LISTENS TO ALL COMMANDS IT WILL PRODUCE EVENTS
+// IN REAL LIFE IT WILL KEEP THE STATE OF THE ORDERS -> IN ORDER TO CHECK THAT THE ORDERS ARE REAL
 public class Sequencer {
     protected final String instanceName;
     private final Transport listenOnStream;
@@ -46,6 +48,7 @@ public class Sequencer {
             case CreateOrderDecoder.TEMPLATE_ID:
                 createOrderCmd.wrapAndApplyHeader(buffer, offset, headerDecoder);
                 System.out.printf("[%s][%s] received cmd=%s%n", Thread.currentThread().getName(), instanceName, createOrderCmd);
+                // WILL COPY OVER THE ATTRIBUTES FROM THE COMMAND TO THE EVENT
                 sendToStream.send(eventBuilder.orderPending()
                                           .id(nextUniqueOrderId())
                                           .ticker(createOrderCmd.ticker())
